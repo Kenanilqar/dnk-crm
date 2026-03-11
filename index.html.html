@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DNK CRM Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#070d1a;--s1:#0f1923;--s2:#162030;--s3:#1d2940;
+  --border:#1e3050;--border2:#253a5e;
+  --a:#00c2ff;--a2:#0066ff;--a3:rgba(0,194,255,0.12);
+  --ag:linear-gradient(135deg,#00c2ff,#0066ff);
+  --green:#00dfa2;--gs:rgba(0,223,162,0.12);
+  --red:#ff3d6e;--rs:rgba(255,61,110,0.12);
+  --yellow:#ffb800;--ys:rgba(255,184,0,0.12);
+  --purple:#9d7fff;--ps:rgba(157,127,255,0.12);
+  --wa:#25d366;--was:rgba(37,211,102,0.12);
+  --text:#ddeeff;--text2:#6a85aa;--text3:#304560;
+  --r:14px;--r2:10px;--r3:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Outfit',sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+
+/* LOGIN */
+#login-screen{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;}
+.login-card{background:var(--s1);border:1px solid var(--border2);border-radius:20px;padding:36px 32px;width:100%;max-width:400px;box-shadow:0 0 60px rgba(0,102,255,0.15);}
+.login-logo{text-align:center;margin-bottom:28px;}
+.login-logo-icon{width:64px;height:64px;border-radius:18px;background:var(--ag);display:inline-flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:12px;box-shadow:0 0 30px rgba(0,194,255,0.3);}
+
+/* LAYOUT */
+#app{display:none;flex:1;height:100vh;overflow:hidden;}
+#app.visible{display:flex;}
+#sidebar{width:224px;flex-shrink:0;background:var(--s1);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;overflow-y:auto;}
+.sb-logo{padding:18px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.sb-logo-icon{width:36px;height:36px;border-radius:10px;flex-shrink:0;background:var(--ag);display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:0 0 20px rgba(0,194,255,0.25);}
+.sb-section{padding:12px 10px 4px;font-size:10px;font-weight:700;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;margin:2px 8px;border-radius:var(--r3);font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;transition:all 0.18s;border:1px solid transparent;position:relative;}
+.nav-item:hover{color:var(--text);background:var(--s2);}
+.nav-item.active{color:var(--a);background:var(--a3);border-color:rgba(0,194,255,0.2);}
+.nav-item.active::after{content:'';position:absolute;right:-1px;top:25%;bottom:25%;width:2px;background:var(--a);border-radius:2px 0 0 2px;}
+.nav-icon{font-size:15px;flex-shrink:0;}
+.nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;}
+.nav-badge.yellow{background:var(--yellow);color:#000;}
+.sb-user{margin-top:auto;padding:12px;border-top:1px solid var(--border);}
+.sb-user-card{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--s2);border-radius:var(--r2);border:1px solid var(--border);}
+.avatar{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;flex-shrink:0;background:var(--ag);}
+
+#main{flex:1;display:flex;flex-direction:column;min-width:0;height:100vh;overflow:hidden;}
+#topbar{height:56px;flex-shrink:0;background:var(--s1);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;gap:16px;}
+#content{flex:1;overflow-y:auto;padding:24px;}
+
+/* SPINNER */
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid var(--border2);border-top-color:var(--a);border-radius:50%;animation:spin 0.7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-overlay{position:fixed;inset:0;z-index:150;background:rgba(7,13,26,0.85);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;backdrop-filter:blur(4px);}
+.loading-overlay.hidden{display:none;}
+
+/* COMPONENTS */
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;}
+.page-title{font-size:22px;font-weight:800;letter-spacing:-0.02em;}
+.page-sub{font-size:13px;color:var(--text2);margin-top:2px;}
+.card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:20px;}
+.card-sm{background:var(--s1);border:1px solid var(--border);border-radius:var(--r2);padding:13px 16px;}
+.card-title{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;margin-bottom:20px;}
+.stat-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:18px;position:relative;overflow:hidden;transition:transform 0.2s;}
+.stat-card:hover{transform:translateY(-2px);}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--ag);}
+.stat-card.green::before{background:linear-gradient(90deg,var(--green),#00b37a);}
+.stat-card.yellow::before{background:linear-gradient(90deg,var(--yellow),#e69600);}
+.stat-label{font-size:11px;color:var(--text2);font-weight:600;margin-bottom:8px;}
+.stat-value{font-size:32px;font-weight:900;line-height:1;}
+.stat-icon{position:absolute;top:14px;right:14px;font-size:22px;opacity:0.3;}
+
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:var(--r3);font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all 0.18s;white-space:nowrap;}
+.btn:disabled{opacity:0.45;cursor:not-allowed;}
+.btn-primary{background:var(--ag);color:#fff;box-shadow:0 4px 16px rgba(0,102,255,0.3);}
+.btn-primary:hover:not(:disabled){filter:brightness(1.1);transform:translateY(-1px);}
+.btn-success{background:var(--gs);color:var(--green);border:1px solid rgba(0,223,162,0.3);}
+.btn-success:hover{background:var(--green);color:#000;}
+.btn-danger{background:var(--rs);color:var(--red);border:1px solid rgba(255,61,110,0.3);}
+.btn-danger:hover{background:var(--red);color:#fff;}
+.btn-ghost{background:var(--s2);color:var(--text);border:1px solid var(--border);}
+.btn-ghost:hover{border-color:var(--a);color:var(--a);}
+.btn-wa{background:var(--was);color:var(--wa);border:1px solid rgba(37,211,102,0.3);}
+.btn-wa:hover{background:var(--wa);color:#fff;}
+.btn-yellow{background:var(--ys);color:var(--yellow);border:1px solid rgba(255,184,0,0.3);}
+.btn-sm{padding:6px 12px;font-size:12px;border-radius:var(--r3);}
+.btn-xs{padding:4px 9px;font-size:11px;border-radius:6px;}
+
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;}
+.badge-blue{background:var(--a3);color:var(--a);}
+.badge-green{background:var(--gs);color:var(--green);}
+.badge-red{background:var(--rs);color:var(--red);}
+.badge-yellow{background:var(--ys);color:var(--yellow);}
+.badge-gray{background:rgba(100,120,160,0.12);color:#6a85aa;}
+
+.input{background:var(--bg);border:1px solid var(--border);border-radius:var(--r3);color:var(--text);font-family:'Outfit',sans-serif;font-size:13px;padding:9px 13px;width:100%;outline:none;transition:border-color 0.2s,box-shadow 0.2s;}
+.input:focus{border-color:var(--a);box-shadow:0 0 0 3px rgba(0,194,255,0.12);}
+.input::placeholder{color:var(--text3);}
+select.input option{background:var(--s2);}
+textarea.input{resize:vertical;min-height:80px;line-height:1.5;}
+.form-label{font-size:11px;font-weight:700;color:var(--text2);letter-spacing:0.05em;margin-bottom:5px;display:block;}
+.form-group{margin-bottom:14px;}
+.form-row{display:grid;gap:12px;grid-template-columns:1fr 1fr;}
+
+.list-item{background:var(--s1);border:1px solid var(--border);border-radius:var(--r2);padding:12px 15px;margin-bottom:8px;display:flex;align-items:center;gap:13px;transition:border-color 0.18s,transform 0.15s;}
+.list-item:hover{border-color:var(--border2);transform:translateX(2px);}
+.list-info{flex:1;min-width:0;}
+.list-name{font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px;}
+.list-sub{font-size:12px;color:var(--text2);}
+.list-actions{display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;align-items:center;}
+
+.overlay{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,0.72);backdrop-filter:blur(5px);display:none;align-items:center;justify-content:center;padding:20px;}
+.overlay.open{display:flex;}
+.modal{background:var(--s1);border:1px solid var(--border2);border-radius:18px;padding:24px;width:100%;max-width:520px;max-height:88vh;overflow-y:auto;animation:slideUp 0.22s cubic-bezier(0.34,1.2,0.64,1);}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.modal-title{font-size:17px;font-weight:800;}
+.modal-close{background:none;border:none;color:var(--text2);cursor:pointer;font-size:22px;line-height:1;}
+.modal-close:hover{color:var(--red);}
+@keyframes slideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+.prog-track{background:var(--s3);border-radius:4px;height:6px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:4px;background:var(--ag);transition:width 0.7s ease;}
+
+.kanban{display:flex;gap:12px;overflow-x:auto;padding-bottom:12px;min-height:55vh;}
+.kol{flex-shrink:0;width:210px;}
+.kol-header{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:var(--r3);margin-bottom:8px;}
+.kcard{background:var(--s2);border:1px solid var(--border);border-radius:var(--r3);padding:12px;cursor:grab;transition:all 0.15s;margin-bottom:8px;}
+.kcard:hover{border-color:var(--border2);box-shadow:0 4px 16px rgba(0,0,0,0.3);}
+.kdrop-zone{min-height:40px;border:2px dashed var(--border);border-radius:var(--r3);display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:12px;margin-bottom:8px;}
+.kdrop-zone.drag-over{border-color:var(--a);background:var(--a3);color:var(--a);}
+
+.chart-wrap{display:flex;flex-direction:column;gap:10px;}
+.chart-item{display:flex;align-items:center;gap:10px;}
+.chart-label{font-size:12px;color:var(--text2);min-width:90px;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.chart-track{flex:1;background:var(--s3);border-radius:4px;height:8px;overflow:hidden;}
+.chart-fill{height:100%;border-radius:4px;transition:width 0.8s cubic-bezier(0.34,1.1,0.64,1);}
+.chart-val{font-size:12px;font-weight:700;color:var(--text2);min-width:28px;font-family:'JetBrains Mono',monospace;}
+
+.task-tabs{display:flex;gap:6px;margin-bottom:16px;overflow-x:auto;}
+.task-tab{padding:7px 14px;border-radius:var(--r3);font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);color:var(--text2);background:var(--s1);transition:all 0.15s;white-space:nowrap;}
+.task-tab.active{background:var(--a3);border-color:rgba(0,194,255,0.3);color:var(--a);}
+
+#toast-container{position:fixed;bottom:24px;right:24px;z-index:300;display:flex;flex-direction:column;gap:8px;}
+.toast{background:var(--s1);border:1px solid var(--border2);border-radius:var(--r2);padding:12px 18px;font-size:13px;min-width:220px;max-width:320px;display:flex;align-items:center;gap:10px;animation:slideUp 0.25s ease;box-shadow:0 4px 30px rgba(0,0,0,0.5);}
+.toast.success{border-left:3px solid var(--green);color:var(--green);}
+.toast.error{border-left:3px solid var(--red);color:var(--red);}
+.toast.warn{border-left:3px solid var(--yellow);color:var(--yellow);}
+.toast.info{border-left:3px solid var(--a);color:var(--a);}
+
+.empty{text-align:center;padding:48px 20px;color:var(--text2);}
+.empty-icon{font-size:48px;margin-bottom:12px;opacity:0.4;}
+.search-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+.search-row .input{flex:1;min-width:180px;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+@media(max-width:900px){.grid-4{grid-template-columns:repeat(2,1fr);}.grid-3{grid-template-columns:1fr 1fr;}.grid-2{grid-template-columns:1fr;}}
+.tag-wrap{display:flex;flex-wrap:wrap;gap:6px;padding:8px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r3);}
+.tag{padding:4px 10px;border-radius:20px;font-size:12px;background:var(--s3);color:var(--text2);cursor:pointer;transition:all 0.15s;}
+.tag.selected{background:var(--a3);color:var(--a);border:1px solid rgba(0,194,255,0.3);}
+.s-new{background:rgba(100,120,160,0.15);color:#6a85aa;}
+.s-contacted{background:var(--a3);color:var(--a);}
+.s-meeting{background:var(--ps);color:var(--purple);}
+.s-presented{background:var(--ys);color:var(--yellow);}
+.s-positive{background:var(--gs);color:var(--green);}
+.s-contract{background:linear-gradient(135deg,rgba(0,223,162,0.2),rgba(0,194,255,0.2));color:var(--green);}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="global-loader">
+  <div class="spinner" style="width:36px;height:36px;border-width:3px;"></div>
+  <div style="color:var(--text2);font-size:14px;">Yüklənir...</div>
+</div>
+
+<!-- LOGIN -->
+<div id="login-screen" style="display:none;">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon">🧬</div>
+      <div style="font-size:24px;font-weight:900;">DNK CRM <span style="background:var(--ag);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Pro</span></div>
+      <div style="font-size:13px;color:var(--text2);margin-top:4px;">DNK İstanbul Hospital</div>
+    </div>
+    <div id="login-error" style="background:var(--rs);border:1px solid var(--red);border-radius:var(--r3);padding:10px 14px;font-size:13px;color:var(--red);margin-bottom:16px;display:none;"></div>
+    <div class="form-group">
+      <label class="form-label">İSTİFADƏÇİ</label>
+      <select class="input" id="login-user"><option value="">— Adınızı seçin —</option></select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">ŞİFRƏ</label>
+      <div style="position:relative;">
+        <input class="input" type="password" id="login-pass" placeholder="Şifrənizi daxil edin" onkeydown="if(event.key==='Enter')doLogin()">
+        <button onclick="const i=document.getElementById('login-pass');i.type=i.type==='password'?'text':'password';" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:var(--text2);">👁️</button>
+      </div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="doLogin()" id="login-btn">🔐 Daxil ol</button>
+    <div style="text-align:center;margin-top:18px;padding-top:14px;border-top:1px solid var(--border);font-size:12px;color:var(--text2);">
+      İlk giriş: <span style="color:var(--a);font-family:'JetBrains Mono',monospace;">Admin / admin123</span>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <aside id="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-icon">🧬</div>
+      <div>
+        <div style="font-size:14px;font-weight:800;">DNK CRM <span style="background:var(--ag);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Pro</span></div>
+        <div style="font-size:10px;color:var(--text2);">İstanbul Hospital</div>
+      </div>
+    </div>
+    <div class="sb-section">Əsas</div>
+    <div class="nav-item active" data-page="dashboard"><span class="nav-icon">📊</span>İcmal</div>
+    <div class="nav-item" data-page="doctors"><span class="nav-icon">👨‍⚕️</span>Həkimlər</div>
+    <div class="nav-item" data-page="visits"><span class="nav-icon">📋</span>Ziyarətlər</div>
+    <div class="nav-item" data-page="pipeline"><span class="nav-icon">🔄</span>Pipeline</div>
+    <div class="nav-item" data-page="tasks"><span class="nav-icon">✅</span>Tapşırıqlar<span class="nav-badge" id="task-badge" style="display:none">0</span></div>
+    <div class="nav-item" data-page="reminders"><span class="nav-icon">🔔</span>Xatırlatmalar<span class="nav-badge yellow" id="rem-badge" style="display:none">0</span></div>
+    <div class="sb-section">Kataloq</div>
+    <div class="nav-item" data-page="products"><span class="nav-icon">💊</span>Məhsullar</div>
+    <div class="nav-item" data-page="reports"><span class="nav-icon">📈</span>Hesabatlar</div>
+    <div class="nav-item" data-page="export"><span class="nav-icon">📥</span>Export</div>
+    <div class="sb-section nav-manager-section">Admin</div>
+    <div class="nav-item nav-manager" data-page="team"><span class="nav-icon">👥</span>Komanda</div>
+    <div class="sb-user">
+      <div class="sb-user-card">
+        <div class="avatar" id="sb-avatar" style="width:36px;height:36px;font-size:14px;">?</div>
+        <div style="flex:1;min-width:0;">
+          <div id="sb-name" style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
+          <div id="sb-role" style="font-size:11px;color:var(--text2);"></div>
+        </div>
+        <button onclick="logout()" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--text2);" title="Çıxış">🚪</button>
+      </div>
+    </div>
+  </aside>
+  <div id="main">
+    <div id="topbar">
+      <div>
+        <div style="font-size:17px;font-weight:800;" id="page-title">İcmal</div>
+        <div style="font-size:12px;color:var(--text2);" id="page-sub"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div id="viewing-as-bar" style="display:none;background:var(--ys);border:1px solid rgba(255,184,0,0.3);border-radius:var(--r3);padding:5px 10px;font-size:12px;color:var(--yellow);"></div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text2);" id="top-date"></div>
+      </div>
+    </div>
+    <div id="content"></div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="overlay" id="doctor-modal"><div class="modal">
+  <div class="modal-header"><div class="modal-title" id="dm-title">👨‍⚕️ Həkim</div><button class="modal-close" onclick="closeModal('doctor-modal')">✕</button></div>
+  <input type="hidden" id="dm-id">
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">AD SOYAD *</label><input class="input" id="dm-name" placeholder="Dr. Əli Həsənov"></div>
+    <div class="form-group"><label class="form-label">İXTİSAS *</label><select class="input" id="dm-spec"><option value="">— Seçin —</option><option>Kardioloq</option><option>Terapevt</option><option>Cərrah</option><option>Nevroloq</option><option>Ortoped</option><option>Stomatoloq</option><option>Ginekol</option><option>Onkoloq</option><option>Uroloji</option><option>Digər</option></select></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">KLİNİKA</label><input class="input" id="dm-clinic"></div>
+    <div class="form-group"><label class="form-label">TELEFON</label><input class="input" id="dm-phone" placeholder="+994..."></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">ŞƏHƏR</label><input class="input" id="dm-city" placeholder="Bakı"></div>
+    <div class="form-group"><label class="form-label">POTENSIAL</label><select class="input" id="dm-pot"><option value="high">🟢 Yüksək</option><option value="medium" selected>🟡 Orta</option><option value="low">🔴 Aşağı</option></select></div>
+  </div>
+  <div class="form-group nav-manager-field" style="display:none;"><label class="form-label">NÜMAYƏNDƏYƏ TƏYİN ET</label><select class="input" id="dm-assign"></select></div>
+  <div class="form-group"><label class="form-label">QEYDLƏR</label><textarea class="input" id="dm-notes"></textarea></div>
+  <div style="display:flex;gap:10px;justify-content:flex-end;">
+    <button class="btn btn-ghost" onclick="closeModal('doctor-modal')">İmtina</button>
+    <button class="btn btn-primary" onclick="saveDoctor()">💾 Saxla</button>
+  </div>
+</div></div>
+
+<div class="overlay" id="visit-modal"><div class="modal">
+  <div class="modal-header"><div class="modal-title" id="vm-title">📋 Ziyarət</div><button class="modal-close" onclick="closeModal('visit-modal')">✕</button></div>
+  <input type="hidden" id="vm-id">
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">HƏKIM *</label><select class="input" id="vm-doctor"></select></div>
+    <div class="form-group"><label class="form-label">TARİX *</label><input class="input" type="date" id="vm-date"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">VAXT</label><input class="input" type="time" id="vm-time"></div>
+    <div class="form-group"><label class="form-label">STATUS</label><select class="input" id="vm-status"><option value="planned">📅 Planlaşdırılıb</option><option value="positive">✅ Müsbət</option><option value="neutral">😐 Neytral</option><option value="negative">❌ Mənfi</option></select></div>
+  </div>
+  <div class="form-group"><label class="form-label">MƏHSULLAR</label><div class="tag-wrap" id="vm-products"></div></div>
+  <div class="form-group"><label class="form-label">QEYD</label><textarea class="input" id="vm-notes"></textarea></div>
+  <div class="form-group"><label class="form-label">NÖVBƏTİ ZİYARƏT</label><input class="input" type="date" id="vm-next"></div>
+  <div style="display:flex;gap:10px;justify-content:flex-end;">
+    <button class="btn btn-ghost" onclick="closeModal('visit-modal')">İmtina</button>
+    <button class="btn btn-primary" onclick="saveVisit()">💾 Saxla</button>
+  </div>
+</div></div>
+
+<div class="overlay" id="product-modal"><div class="modal">
+  <div class="modal-header"><div class="modal-title" id="pm-title">💊 Məhsul</div><button class="modal-close" onclick="closeModal('product-modal')">✕</button></div>
+  <input type="hidden" id="pm-id">
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">AD *</label><input class="input" id="pm-name"></div>
+    <div class="form-group"><label class="form-label">KATEQORİYA</label><select class="input" id="pm-cat"><option>Cərrahi Xidmət</option><option>Diaqnostika</option><option>Estetik Tibb</option><option>Stomatoloji</option><option>Ortopediya</option><option>Kardiologiya</option><option>Digər</option></select></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">QİYMƏT (AZN)</label><input class="input" type="number" id="pm-price"></div>
+    <div class="form-group"><label class="form-label">STATUS</label><select class="input" id="pm-active"><option value="true">✅ Aktiv</option><option value="false">❌ Deaktiv</option></select></div>
+  </div>
+  <div class="form-group"><label class="form-label">AÇIQLAMA</label><textarea class="input" id="pm-desc"></textarea></div>
+  <div style="display:flex;gap:10px;justify-content:flex-end;">
+    <button class="btn btn-ghost" onclick="closeModal('product-modal')">İmtina</button>
+    <button class="btn btn-primary" onclick="saveProduct()">💾 Saxla</button>
+  </div>
+</div></div>
+
+<div class="overlay" id="task-modal"><div class="modal">
+  <div class="modal-header"><div class="modal-title">✅ Tapşırıq</div><button class="modal-close" onclick="closeModal('task-modal')">✕</button></div>
+  <input type="hidden" id="tm-id">
+  <div class="form-group"><label class="form-label">BAŞLIQ *</label><input class="input" id="tm-title"></div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">PRİORİTET</label><select class="input" id="tm-priority"><option value="high">🔴 Yüksək</option><option value="medium" selected>🟡 Orta</option><option value="low">🟢 Aşağı</option></select></div>
+    <div class="form-group"><label class="form-label">SON TARİX</label><input class="input" type="date" id="tm-due"></div>
+  </div>
+  <div class="form-group nav-manager-field" style="display:none;"><label class="form-label">TƏYİN ET</label><select class="input" id="tm-assign"></select></div>
+  <div class="form-group"><label class="form-label">HƏKIM</label><select class="input" id="tm-doctor"><option value="">—</option></select></div>
+  <div class="form-group"><label class="form-label">AÇIQLAMA</label><textarea class="input" id="tm-desc"></textarea></div>
+  <div style="display:flex;gap:10px;justify-content:flex-end;">
+    <button class="btn btn-ghost" onclick="closeModal('task-modal')">İmtina</button>
+    <button class="btn btn-primary" onclick="saveTask()">💾 Saxla</button>
+  </div>
+</div></div>
+
+<div class="overlay" id="reminder-modal"><div class="modal">
+  <div class="modal-header"><div class="modal-title">🔔 Xatırlatma</div><button class="modal-close" onclick="closeModal('reminder-modal')">✕</button></div>
+  <input type="hidden" id="rem-id">
+  <div class="form-group"><label class="form-label">BAŞLIQ *</label><input class="input" id="rem-title"></div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">TARİX *</label><input class="input" type="date" id="rem-date"></div>
+    <div class="form-group"><label class="form-label">VAXT</label><input class="input" type="time" id="rem-time"></div>
+  </div>
+  <div class="form-group"><label class="form-label">HƏKIM</label><select class="input" id="rem-doctor"><option value="">—</option></select></div>
+  <div class="form-group"><label class="form-label">QEYD</label><textarea class="input" id="rem-note"></textarea></div>
+  <div style="display:flex;gap:10px;justify-content:flex-end;">
+    <button class="btn btn-ghost" onclick="closeModal('reminder-modal')">İmtina</button>
+    <button class="btn btn-primary" onclick="saveReminder()">🔔 Saxla</button>
+  </div>
+</div></div>
+
+<div class="overlay" id="user-modal"><div class="modal">
+  <div class="modal-header"><div class="modal-title" id="um-title">👤 İstifadəçi</div><button class="modal-close" onclick="closeModal('user-modal')">✕</button></div>
+  <input type="hidden" id="um-id">
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">AD SOYAD *</label><input class="input" id="um-name"></div>
+    <div class="form-group"><label class="form-label">ROL</label><select class="input" id="um-role"><option value="rep">🟢 Nümayəndə</option><option value="manager">🟡 Menecer</option><option value="admin">🔴 Admin</option></select></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">ŞİFRƏ *</label><input class="input" id="um-pass" placeholder="Min. 4 simvol"></div>
+    <div class="form-group"><label class="form-label">BÖLGƏ</label><input class="input" id="um-region" placeholder="Bakı"></div>
+  </div>
+  <div class="form-group"><label class="form-label">TELEFON</label><input class="input" id="um-phone" placeholder="+994..."></div>
+  <div class="form-group" id="um-status-row" style="display:none;"><label class="form-label">STATUS</label><select class="input" id="um-active"><option value="true">✅ Aktiv</option><option value="false">❌ Deaktiv</option></select></div>
+  <div style="display:flex;gap:10px;justify-content:flex-end;">
+    <button class="btn btn-ghost" onclick="closeModal('user-modal')">İmtina</button>
+    <button class="btn btn-primary" onclick="saveUser()">💾 Saxla</button>
+  </div>
+</div></div>
+
+<div class="overlay" id="target-modal"><div class="modal">
+  <div class="modal-header"><div class="modal-title" id="tgt-title">🎯 Hədəf</div><button class="modal-close" onclick="closeModal('target-modal')">✕</button></div>
+  <input type="hidden" id="tgt-uid">
+  <div class="form-group"><label class="form-label">ZİYARƏT HƏDƏFİ</label><input class="input" type="number" id="tgt-visits" placeholder="20"></div>
+  <div class="form-group"><label class="form-label">MÜSBƏt ZİYARƏT</label><input class="input" type="number" id="tgt-positive" placeholder="10"></div>
+  <div class="form-group"><label class="form-label">YENİ HƏKIM</label><input class="input" type="number" id="tgt-doctors" placeholder="5"></div>
+  <div style="display:flex;gap:10px;justify-content:flex-end;">
+    <button class="btn btn-ghost" onclick="closeModal('target-modal')">İmtina</button>
+    <button class="btn btn-primary" onclick="saveTarget()">🎯 Saxla</button>
+  </div>
+</div></div>
+
+<div id="toast-container"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+// SUPABASE
+// ═══════════════════════════════════════════════
+const { createClient } = supabase;
+const sb = createClient(
+  'https://juzbgxcmdbnhxytxnycf.supabase.co',
+  'sb_publishable_uL5juYGi7nW_AcFDIbIOsA_aI-3CgBI'
+);
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let CU = null;        // current user
+let VA = null;        // viewing as (admin only)
+let allUsers = [];
+let allProducts = [];
+let curPage = 'dashboard';
+let taskTab = 'pending';
+let dragId = null;
+
+const isAdmin = () => CU?.role === 'admin';
+const isManager = () => ['admin','manager'].includes(CU?.role);
+const VU = () => VA || CU;  // effective user
+
+// ═══════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════
+function uid(){ return crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36)+Math.random().toString(36).slice(2); }
+function today(){ return new Date().toISOString().split('T')[0]; }
+function fmtD(d){ if(!d||d==='—')return'—'; try{ const[y,m,dy]=d.split('-'); return`${dy}.${m}.${y}`; }catch{ return d; } }
+function fmtDate(){
+  const n=new Date();
+  const days=['Bazar','Bazar ertəsi','Çərşənbə axşamı','Çərşənbə','Cümə axşamı','Cümə','Şənbə'];
+  const months=['Yanvar','Fevral','Mart','Aprel','May','İyun','İyul','Avqust','Sentyabr','Oktyabr','Noyabr','Dekabr'];
+  return`${days[n.getDay()]}, ${n.getDate()} ${months[n.getMonth()]} ${n.getFullYear()}`;
+}
+
+function toast(msg, type='success'){
+  const c=document.getElementById('toast-container');
+  const t=document.createElement('div');
+  t.className=`toast ${type}`;
+  t.innerHTML=`<span>${{success:'✅',error:'❌',warn:'⚠️',info:'ℹ️'}[type]||'✅'}</span><span>${msg}</span>`;
+  c.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';t.style.transform='translateY(10px)';t.style.transition='all 0.3s';setTimeout(()=>t.remove(),300);},2800);
+}
+
+function showLoader(){ document.getElementById('global-loader').classList.remove('hidden'); }
+function hideLoader(){ document.getElementById('global-loader').classList.add('hidden'); }
+
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){
+  document.getElementById(id).classList.remove('open');
+  document.querySelectorAll(`#${id} input:not([type=hidden]),#${id} select,#${id} textarea`).forEach(el=>{ if(el.tagName==='SELECT')el.selectedIndex=0; else el.value=''; });
+  document.querySelectorAll(`#${id} input[type=hidden]`).forEach(el=>el.value='');
+}
+
+// ═══════════════════════════════════════════════
+// SUPABASE HELPERS
+// ═══════════════════════════════════════════════
+async function dbGet(table, filters={}){
+  let q = sb.from(table).select('*').order('created_at', {ascending: false});
+  Object.entries(filters).forEach(([k,v]) => { q = q.eq(k, v); });
+  const { data, error } = await q;
+  if(error){ console.error(table, error); return []; }
+  return data || [];
+}
+
+async function dbInsert(table, obj){
+  const { data, error } = await sb.from(table).insert(obj).select().single();
+  if(error){ console.error(error); toast('Xəta: '+error.message, 'error'); return null; }
+  return data;
+}
+
+async function dbUpdate(table, id, obj){
+  const { data, error } = await sb.from(table).update(obj).eq('id', id).select().single();
+  if(error){ console.error(error); toast('Xəta: '+error.message, 'error'); return null; }
+  return data;
+}
+
+async function dbDelete(table, id){
+  const { error } = await sb.from(table).delete().eq('id', id);
+  if(error){ toast('Xəta: '+error.message, 'error'); return false; }
+  return true;
+}
+
+// ═══════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════
+async function initApp(){
+  showLoader();
+  try {
+    allUsers = await dbGet('dnk_users');
+    allProducts = await dbGet('dnk_products');
+    populateLoginUsers();
+    hideLoader();
+    document.getElementById('login-screen').style.display = 'flex';
+  } catch(e){
+    hideLoader();
+    toast('Supabase bağlantı xətası!', 'error');
+    document.getElementById('login-screen').style.display = 'flex';
+  }
+}
+
+function populateLoginUsers(){
+  const sel = document.getElementById('login-user');
+  sel.innerHTML = '<option value="">— Adınızı seçin —</option>' +
+    allUsers.filter(u=>u.active).map(u=>`<option value="${u.id}">${u.name} (${roleLabel(u.role)})</option>`).join('');
+}
+
+async function doLogin(){
+  const uid = document.getElementById('login-user').value;
+  const pass = document.getElementById('login-pass').value;
+  const err = document.getElementById('login-error');
+  if(!uid){ err.style.display='block'; err.textContent='❌ İstifadəçi seçin'; return; }
+  const user = allUsers.find(u => u.id===uid && u.password===pass && u.active);
+  if(!user){ err.style.display='block'; err.textContent='❌ Şifrə yanlışdır'; return; }
+  err.style.display='none';
+  CU = user; VA = null;
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+  updateSidebar();
+  await updateBadges();
+  navigate('dashboard');
+}
+
+function logout(){
+  CU = null; VA = null;
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-error').style.display = 'none';
+}
+
+const roleLabel = r => ({admin:'🔴 Admin',manager:'🟡 Menecer',rep:'🟢 Nümayəndə'}[r]||r);
+
+function updateSidebar(){
+  document.getElementById('sb-avatar').textContent = CU.name.charAt(0);
+  document.getElementById('sb-name').textContent = CU.name;
+  document.getElementById('sb-role').textContent = roleLabel(CU.role);
+  document.querySelectorAll('.nav-manager').forEach(el => el.style.display = isManager()?'':'none');
+  document.querySelectorAll('.nav-manager-section').forEach(el => el.style.display = isManager()?'':'none');
+  const vab = document.getElementById('viewing-as-bar');
+  if(VA){ vab.style.display='block'; vab.innerHTML=`👁️ <b>${VA.name}</b> &nbsp;<button class="btn btn-xs btn-ghost" onclick="stopViewing()">✕</button>`; }
+  else vab.style.display='none';
+}
+
+async function viewAs(userId){
+  const u = allUsers.find(x=>x.id===userId);
+  if(!u) return;
+  VA = u; updateSidebar();
+  navigate('dashboard');
+  toast(`👁️ ${u.name} — görüntüləyirsiniz`, 'info');
+}
+function stopViewing(){ VA=null; updateSidebar(); navigate('dashboard'); }
+
+// ═══════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════
+const pageTitles = {dashboard:'📊 İcmal',doctors:'👨‍⚕️ Həkimlər',visits:'📋 Ziyarətlər',pipeline:'🔄 Pipeline',tasks:'✅ Tapşırıqlar',reminders:'🔔 Xatırlatmalar',products:'💊 Məhsullar',reports:'📈 Hesabatlar',export:'📥 Export',team:'👥 Komanda'};
+
+document.querySelectorAll('.nav-item').forEach(el => el.addEventListener('click', ()=>navigate(el.dataset.page)));
+
+async function navigate(page){
+  curPage = page;
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active', el.dataset.page===page));
+  document.getElementById('page-title').textContent = pageTitles[page]||page;
+  document.getElementById('page-sub').textContent = '';
+  document.getElementById('content').innerHTML = `<div style="display:flex;justify-content:center;padding:48px;"><div class="spinner" style="width:32px;height:32px;border-width:3px;"></div></div>`;
+  const renders = {dashboard:renderDashboard,doctors:renderDoctors,visits:renderVisits,pipeline:renderPipeline,tasks:renderTasks,reminders:renderReminders,products:renderProducts,reports:renderReports,export:renderExport,team:renderTeam};
+  await (renders[page]||renderDashboard)();
+}
+
+async function updateBadges(){
+  try {
+    const [tasks, rems] = await Promise.all([
+      dbGet('dnk_tasks', {owner_id: CU.id}),
+      dbGet('dnk_reminders', {owner_id: CU.id})
+    ]);
+    const pt = tasks.filter(t=>t.status==='pending').length;
+    const pr = rems.filter(r=>!r.done && r.reminder_date<=today()).length;
+    const tb=document.getElementById('task-badge'); if(tb){tb.style.display=pt>0?'':'none';tb.textContent=pt;}
+    const rb=document.getElementById('rem-badge'); if(rb){rb.style.display=pr>0?'':'none';rb.textContent=pr;}
+  } catch(e){}
+}
+
+// ═══════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════
+async function renderDashboard(){
+  const uid = VU().id;
+  const m = today().slice(0,7);
+  const [docs, vis, tasks, target] = await Promise.all([
+    dbGet('dnk_doctors', {owner_id: uid}),
+    dbGet('dnk_visits', {owner_id: uid}),
+    dbGet('dnk_tasks', {owner_id: CU.id}),
+    sb.from('dnk_targets').select('*').eq('owner_id', uid).eq('month', m).single().then(r=>r.data)
+  ]);
+  const mv = vis.filter(v=>v.visit_date?.startsWith(m));
+  const pos = vis.filter(v=>v.status==='positive');
+  const pending = tasks.filter(t=>t.status==='pending').slice(0,5);
+  const tv = target?.visit_target||0;
+  const prog = tv ? Math.min(Math.round(mv.length/tv*100),100) : 0;
+
+  // Monthly chart
+  const months = [];
+  for(let i=5;i>=0;i--){
+    const d=new Date(); d.setMonth(d.getMonth()-i);
+    const mk=d.toISOString().slice(0,7);
+    const lbl=['Yan','Fev','Mar','Apr','May','İyn','İyl','Avq','Sen','Okt','Noy','Dek'][d.getMonth()];
+    months.push({lbl, cnt: vis.filter(v=>v.visit_date?.startsWith(mk)).length});
+  }
+  const maxM = Math.max(...months.map(x=>x.cnt), 1);
+
+  const recent = vis.slice(0,5);
+  const smap = {planned:{l:'Plan',c:'badge-blue'},positive:{l:'Müsbət',c:'badge-green'},neutral:{l:'Neytral',c:'badge-yellow'},negative:{l:'Mənfi',c:'badge-red'}};
+  const prioC = {high:'var(--red)',medium:'var(--yellow)',low:'var(--green)'};
+
+  // Team leaderboard (manager)
+  let teamHTML = '';
+  if(isManager() && !VA){
+    const reps = allUsers.filter(u=>u.active && u.role==='rep');
+    const repVis = await Promise.all(reps.map(u => dbGet('dnk_visits',{owner_id:u.id})));
+    const repData = reps.map((u,i)=>({...u, cnt: repVis[i].filter(v=>v.visit_date?.startsWith(m)).length})).sort((a,b)=>b.cnt-a.cnt);
+    const maxR = Math.max(...repData.map(r=>r.cnt), 1);
+    teamHTML = `<div class="card" style="margin-top:16px;">
+      <div class="card-title">🏆 Komanda Liderbordu — ${m}</div>
+      <div class="chart-wrap">
+        ${repData.map((r,i)=>`<div class="chart-item" style="cursor:pointer;" onclick="viewAs('${r.id}')">
+          <div style="width:22px;text-align:center;font-size:13px;">${i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`}</div>
+          <div class="avatar" style="width:28px;height:28px;font-size:12px;">${r.name.charAt(0)}</div>
+          <div class="chart-label" style="text-align:left;min-width:90px;">${r.name}</div>
+          <div class="chart-track"><div class="chart-fill" style="width:${Math.round(r.cnt/maxR*100)}%;background:var(--ag);"></div></div>
+          <div class="chart-val">${r.cnt}</div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  document.getElementById('content').innerHTML = `
+  ${VA?`<div style="background:rgba(255,184,0,0.08);border:1px solid rgba(255,184,0,0.2);border-radius:var(--r2);padding:10px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;"><span style="color:var(--yellow);font-size:13px;">👁️ <b>${VA.name}</b> məlumatlarını görüntüləyirsiniz</span><button class="btn btn-xs btn-ghost" onclick="stopViewing()">✕ Geri</button></div>`:''}
+  <div class="stat-grid">
+    <div class="stat-card"><div class="stat-icon">👨‍⚕️</div><div class="stat-label">HƏKIMLƏR</div><div class="stat-value">${docs.length}</div></div>
+    <div class="stat-card green"><div class="stat-icon">📋</div><div class="stat-label">ZİYARƏTLƏR</div><div class="stat-value" style="color:var(--green)">${vis.length}</div></div>
+    <div class="stat-card"><div class="stat-icon">📅</div><div class="stat-label">BU AY</div><div class="stat-value" style="color:var(--a)">${mv.length}</div></div>
+    <div class="stat-card yellow"><div class="stat-icon">✅</div><div class="stat-label">MÜSBƏt</div><div class="stat-value" style="color:var(--yellow)">${pos.length}</div></div>
+  </div>
+  ${tv?`<div class="card" style="margin-bottom:16px;"><div class="card-title">🎯 Aylıq Hədəf — ${m} <span class="badge badge-blue">${prog}%</span></div><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:4px;"><span>${mv.length} / ${tv} ziyarət</span><span>${prog}%</span></div><div class="prog-track"><div class="prog-fill" style="width:${prog}%;background:${prog>=100?'linear-gradient(90deg,var(--green),#00b37a)':prog>=60?'linear-gradient(90deg,var(--yellow),#e69600)':'linear-gradient(90deg,var(--red),#cc1a4a)'};"></div></div></div>`:''}
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">📊 Aylıq Trend</div>
+      <div class="chart-wrap">${months.map(m=>`<div class="chart-item"><div class="chart-label">${m.lbl}</div><div class="chart-track"><div class="chart-fill" style="width:${Math.round(m.cnt/maxM*100)}%;background:var(--ag);"></div></div><div class="chart-val">${m.cnt}</div></div>`).join('')}</div>
+    </div>
+    <div class="card">
+      <div class="card-title">🕐 Son Ziyarətlər</div>
+      ${recent.length===0?'<div class="empty" style="padding:20px;"><div class="empty-icon" style="font-size:32px;">📭</div><div style="font-size:13px;">Ziyarət yoxdur</div></div>':''}
+      ${recent.map(v=>{const doc=docs.find(d=>d.id===v.doctor_id)||{};return`<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);"><div><div style="font-size:13px;font-weight:600;">${doc.name||'—'}</div><div style="font-size:11px;color:var(--text2);">${fmtD(v.visit_date)}</div></div><span class="badge ${smap[v.status]?.c||'badge-gray'}">${smap[v.status]?.l||v.status}</span></div>`;}).join('')}
+    </div>
+  </div>
+  ${pending.length?`<div class="card" style="margin-top:16px;"><div class="card-title" style="">✅ Gözləyən Tapşırıqlar <button class="btn btn-xs btn-ghost" onclick="navigate('tasks')" style="font-size:11px;">Hamısı →</button></div>${pending.map(t=>{const doc=docs.find(d=>d.id===t.doctor_id);return`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);"><div style="width:8px;height:8px;border-radius:50%;background:${prioC[t.priority]};flex-shrink:0;"></div><div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${t.title}</div><div style="font-size:11px;color:var(--text2);">${doc?doc.name:''} ${t.due_date?'· '+fmtD(t.due_date):''}</div></div><button class="btn btn-success btn-xs" onclick="completeTask('${t.id}')">✓</button></div>`;}).join('')}</div>`:''}
+  ${teamHTML}`;
+}
+
+// ═══════════════════════════════════════════════
+// DOCTORS
+// ═══════════════════════════════════════════════
+const potCls={high:'badge-green',medium:'badge-yellow',low:'badge-red'};
+const potL={high:'Yüksək',medium:'Orta',low:'Aşağı'};
+const stageL={new:'Yeni',contacted:'Əlaqə',meeting:'Görüş',presented:'Təqdim',positive:'Müsbət',contract:'Müqavilə'};
+const stageBadge={new:'s-new',contacted:'s-contacted',meeting:'s-meeting',presented:'s-presented',positive:'s-positive',contract:'s-contract'};
+
+async function renderDoctors(){
+  const docs = await dbGet('dnk_doctors', {owner_id: VU().id});
+  document.getElementById('content').innerHTML = `
+  <div class="page-header">
+    <div><div class="page-title">👨‍⚕️ Həkimlər</div><div class="page-sub" id="doc-count">${docs.length} həkim</div></div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-success btn-sm" onclick="exportDoctorsList()">📥 Excel</button>
+      ${!VA?`<button class="btn btn-primary" onclick="openDoctorModal()">＋ Həkim Əlavə Et</button>`:''}
+    </div>
+  </div>
+  <div class="search-row">
+    <input class="input" placeholder="🔍 Ad, ixtisas, klinika..." id="doc-search">
+    <select class="input" style="width:150px;" id="doc-pot">
+      <option value="">Bütün potensial</option><option value="high">🟢 Yüksək</option><option value="medium">🟡 Orta</option><option value="low">🔴 Aşağı</option>
+    </select>
+  </div>
+  <div id="doc-list">${renderDoctorList(docs)}</div>`;
+  document.getElementById('doc-search').oninput = () => filterDoctorList(docs);
+  document.getElementById('doc-pot').onchange = () => filterDoctorList(docs);
+}
+
+function renderDoctorList(docs){
+  if(!docs.length) return `<div class="empty"><div class="empty-icon">👨‍⚕️</div><div class="empty-text">Həkim tapılmadı</div></div>`;
+  return docs.map(d=>`
+    <div class="list-item">
+      <div class="avatar" style="width:44px;height:44px;font-size:16px;">${d.name.charAt(0)}</div>
+      <div class="list-info" style="${!VA?'cursor:pointer;':''}" onclick="${!VA?`openDoctorModal('${d.id}')`:''}">>
+        <div class="list-name">${d.name}</div>
+        <div class="list-sub">🩺 ${d.specialty||''}${d.clinic?' · 🏥 '+d.clinic:''}${d.city?' · 📍 '+d.city:''}</div>
+      </div>
+      <div class="list-actions">
+        <span class="badge ${potCls[d.potential]||'badge-gray'}">${potL[d.potential]||''}</span>
+        <span class="badge ${stageBadge[d.stage]||'s-new'}" style="font-size:10px;">${stageL[d.stage]||'Yeni'}</span>
+        ${d.phone?`<a href="https://wa.me/${d.phone.replace(/\D/g,'')}" target="_blank" class="btn btn-wa btn-sm">💬 WA</a>`:''}
+        ${!VA?`<button class="btn btn-ghost btn-sm" onclick="openDoctorModal('${d.id}')">✏️</button><button class="btn btn-danger btn-sm" onclick="deleteDoctor('${d.id}')">🗑️</button>`:''}
+      </div>
+    </div>`).join('');
+}
+
+function filterDoctorList(docs){
+  const q=(document.getElementById('doc-search')?.value||'').toLowerCase();
+  const pot=document.getElementById('doc-pot')?.value||'';
+  const f=docs.filter(d=>(d.name.toLowerCase().includes(q)||(d.specialty||'').toLowerCase().includes(q)||(d.clinic||'').toLowerCase().includes(q))&&(!pot||d.potential===pot));
+  document.getElementById('doc-count').textContent=`${f.length} həkim`;
+  document.getElementById('doc-list').innerHTML=renderDoctorList(f);
+}
+
+async function openDoctorModal(id){
+  if(isManager()){
+    document.querySelector('.nav-manager-field').style.display='block';
+    document.getElementById('dm-assign').innerHTML='<option value="">Öz üzərimə</option>'+allUsers.filter(u=>u.active).map(u=>`<option value="${u.id}">${u.name}</option>`).join('');
+  }
+  document.getElementById('dm-id').value=id||'';
+  if(id){
+    const d = await sb.from('dnk_doctors').select('*').eq('id',id).single().then(r=>r.data);
+    if(!d)return;
+    document.getElementById('dm-title').textContent='✏️ Həkimi Düzəlt';
+    document.getElementById('dm-name').value=d.name||'';
+    document.getElementById('dm-spec').value=d.specialty||'';
+    document.getElementById('dm-clinic').value=d.clinic||'';
+    document.getElementById('dm-phone').value=d.phone||'';
+    document.getElementById('dm-city').value=d.city||'';
+    document.getElementById('dm-pot').value=d.potential||'medium';
+    document.getElementById('dm-notes').value=d.notes||'';
+    if(isManager()) document.getElementById('dm-assign').value=d.owner_id||'';
+  } else document.getElementById('dm-title').textContent='👨‍⚕️ Həkim Əlavə Et';
+  openModal('doctor-modal');
+}
+
+async function saveDoctor(){
+  const name=document.getElementById('dm-name').value.trim();
+  const spec=document.getElementById('dm-spec').value;
+  if(!name||!spec){toast('Ad Soyad və İxtisas mütləqdir!','error');return;}
+  const assignTo = isManager()&&document.getElementById('dm-assign').value ? document.getElementById('dm-assign').value : VU().id;
+  const id=document.getElementById('dm-id').value;
+  const obj={name,specialty:spec,clinic:document.getElementById('dm-clinic').value.trim(),phone:document.getElementById('dm-phone').value.trim(),city:document.getElementById('dm-city').value.trim(),potential:document.getElementById('dm-pot').value,notes:document.getElementById('dm-notes').value.trim(),owner_id:assignTo};
+  if(id) await dbUpdate('dnk_doctors',id,obj);
+  else await dbInsert('dnk_doctors',{...obj,stage:'new'});
+  closeModal('doctor-modal');
+  toast(id?'✅ Həkim yeniləndi':'✅ Həkim əlavə edildi');
+  await renderDoctors();
+}
+
+async function deleteDoctor(id){
+  if(!confirm('Silinsin?'))return;
+  await dbDelete('dnk_doctors',id);
+  toast('🗑️ Silindi','warn');
+  await renderDoctors();
+}
+
+async function exportDoctorsList(){
+  const docs = await dbGet('dnk_doctors', {owner_id: VU().id});
+  if(!docs.length){toast('Məlumat yoxdur!','warn');return;}
+  const data=docs.map(d=>({'Ad Soyad':d.name,'İxtisas':d.specialty||'','Klinika':d.clinic||'','Telefon':d.phone||'','Şəhər':d.city||'','Potensial':potL[d.potential]||'','Mərhələ':stageL[d.stage]||'','Qeydlər':d.notes||''}));
+  const ws=XLSX.utils.json_to_sheet(data);ws['!cols']=Object.keys(data[0]).map(()=>({wch:20}));
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Həkimlər');
+  XLSX.writeFile(wb,`DNK_Hekimler_${today()}.xlsx`);toast('📥 Excel yükləndi');
+}
+
+// ═══════════════════════════════════════════════
+// VISITS
+// ═══════════════════════════════════════════════
+const smap={planned:{l:'Planlaşdırılıb',c:'badge-blue'},positive:{l:'Müsbət',c:'badge-green'},neutral:{l:'Neytral',c:'badge-yellow'},negative:{l:'Mənfi',c:'badge-red'}};
+
+async function renderVisits(){
+  const [vis, docs] = await Promise.all([dbGet('dnk_visits',{owner_id:VU().id}), dbGet('dnk_doctors',{owner_id:VU().id})]);
+  document.getElementById('content').innerHTML=`
+  <div class="page-header">
+    <div><div class="page-title">📋 Ziyarətlər</div><div class="page-sub" id="vis-count">${vis.length}</div></div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-success btn-sm" onclick="exportVisitsList()">📥 Excel</button>
+      ${!VA?`<button class="btn btn-primary" onclick="openVisitModal()">＋ Ziyarət Əlavə Et</button>`:''}
+    </div>
+  </div>
+  <div class="search-row">
+    <input class="input" placeholder="🔍 Həkim adı..." id="vis-search">
+    <select class="input" style="width:160px;" id="vis-st">
+      <option value="">Bütün statuslar</option><option value="planned">📅 Plan</option><option value="positive">✅ Müsbət</option><option value="neutral">😐 Neytral</option><option value="negative">❌ Mənfi</option>
+    </select>
+  </div>
+  <div id="vis-list">${renderVisitList(vis,docs)}</div>`;
+  document.getElementById('vis-search').oninput = () => filterVisitList(vis,docs);
+  document.getElementById('vis-st').onchange = () => filterVisitList(vis,docs);
+}
+
+function renderVisitList(vis,docs){
+  if(!vis.length) return `<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">Ziyarət tapılmadı</div></div>`;
+  return vis.map(v=>{
+    const doc=docs.find(d=>d.id===v.doctor_id)||{};
+    return`<div class="list-item">
+      <div class="avatar" style="width:42px;height:42px;font-size:15px;background:linear-gradient(135deg,var(--green),var(--a));">${(doc.name||'?').charAt(0)}</div>
+      <div class="list-info" style="${!VA?'cursor:pointer;':''}" onclick="${!VA?`openVisitModal('${v.id}')`:''}">>
+        <div class="list-name">${doc.name||'Bilinmir'} <span style="font-weight:400;color:var(--text2);font-size:12px;">— ${doc.specialty||''}</span></div>
+        <div class="list-sub">📅 ${fmtD(v.visit_date)}${v.visit_time?' · '+v.visit_time:''}${v.products?.length?' · 💊 '+v.products.join(', '):''}</div>
+        ${v.notes?`<div class="list-sub">💬 ${v.notes.substring(0,70)}</div>`:''}
+        ${v.next_date?`<div class="list-sub" style="color:${v.next_date<today()?'var(--red)':'var(--yellow)'};">🔔 Növbəti: ${fmtD(v.next_date)}${v.next_date<today()?' ⚠️':''}</div>`:''}
+      </div>
+      <div class="list-actions">
+        <span class="badge ${smap[v.status]?.c||'badge-gray'}">${smap[v.status]?.l||v.status}</span>
+        ${doc.phone?`<a href="https://wa.me/${doc.phone.replace(/\D/g,'')}" target="_blank" class="btn btn-wa btn-sm">💬</a>`:''}
+        ${!VA?`<button class="btn btn-danger btn-sm" onclick="deleteVisit('${v.id}')">🗑️</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterVisitList(vis,docs){
+  const q=(document.getElementById('vis-search')?.value||'').toLowerCase();
+  const st=document.getElementById('vis-st')?.value||'';
+  const f=vis.filter(v=>{const doc=docs.find(d=>d.id===v.doctor_id)||{};return((doc.name||'').toLowerCase().includes(q)||(v.notes||'').toLowerCase().includes(q))&&(!st||v.status===st);});
+  document.getElementById('vis-count').textContent=f.length;
+  document.getElementById('vis-list').innerHTML=renderVisitList(f,docs);
+}
+
+async function openVisitModal(id){
+  const docs=await dbGet('dnk_doctors',{owner_id:VU().id});
+  document.getElementById('vm-doctor').innerHTML='<option value="">— Həkim Seçin —</option>'+docs.map(d=>`<option value="${d.id}">${d.name} — ${d.specialty||''}</option>`).join('');
+  document.getElementById('vm-products').innerHTML=allProducts.filter(p=>p.active).map(p=>`<div class="tag" onclick="this.classList.toggle('selected')">${p.name}</div>`).join('');
+  document.getElementById('vm-date').value=today();
+  document.getElementById('vm-id').value=id||'';
+  if(id){
+    const v=await sb.from('dnk_visits').select('*').eq('id',id).single().then(r=>r.data);
+    if(!v)return;
+    document.getElementById('vm-title').textContent='✏️ Ziyarəti Düzəlt';
+    document.getElementById('vm-doctor').value=v.doctor_id||'';
+    document.getElementById('vm-date').value=v.visit_date||'';
+    document.getElementById('vm-time').value=v.visit_time||'';
+    document.getElementById('vm-status').value=v.status||'planned';
+    document.getElementById('vm-notes').value=v.notes||'';
+    document.getElementById('vm-next').value=v.next_date||'';
+    (v.products||[]).forEach(pn=>{const t=[...document.getElementById('vm-products').children].find(x=>x.textContent===pn);if(t)t.classList.add('selected');});
+  } else document.getElementById('vm-title').textContent='📋 Ziyarət Qeydi';
+  openModal('visit-modal');
+}
+
+async function saveVisit(){
+  const docId=document.getElementById('vm-doctor').value;
+  const date=document.getElementById('vm-date').value;
+  if(!docId||!date){toast('Həkim və tarix mütləqdir!','error');return;}
+  const selProds=[...document.getElementById('vm-products').querySelectorAll('.tag.selected')].map(t=>t.textContent);
+  const id=document.getElementById('vm-id').value;
+  const obj={doctor_id:docId,owner_id:VU().id,visit_date:date,visit_time:document.getElementById('vm-time').value||null,status:document.getElementById('vm-status').value,products:selProds,notes:document.getElementById('vm-notes').value.trim(),next_date:document.getElementById('vm-next').value||null};
+  if(id) await dbUpdate('dnk_visits',id,obj);
+  else await dbInsert('dnk_visits',obj);
+  closeModal('visit-modal');
+  toast(id?'✅ Yeniləndi':'✅ Ziyarət qeydə alındı');
+  await renderVisits(); updateBadges();
+}
+
+async function deleteVisit(id){
+  if(!confirm('Silinsin?'))return;
+  await dbDelete('dnk_visits',id);
+  toast('🗑️ Silindi','warn');
+  await renderVisits();
+}
+
+async function exportVisitsList(){
+  const [vis,docs]=await Promise.all([dbGet('dnk_visits',{owner_id:VU().id}),dbGet('dnk_doctors',{owner_id:VU().id})]);
+  if(!vis.length){toast('Məlumat yoxdur!','warn');return;}
+  const data=vis.map(v=>{const doc=docs.find(d=>d.id===v.doctor_id)||{};return{'Tarix':fmtD(v.visit_date),'Həkim':doc.name||'','İxtisas':doc.specialty||'','Status':smap[v.status]?.l||v.status,'Məhsullar':(v.products||[]).join(', '),'Qeydlər':v.notes||'','Növbəti':fmtD(v.next_date)};});
+  const ws=XLSX.utils.json_to_sheet(data);ws['!cols']=Object.keys(data[0]).map(()=>({wch:20}));
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Ziyarətlər');
+  XLSX.writeFile(wb,`DNK_Ziyaretler_${today()}.xlsx`);toast('📥 Excel yükləndi');
+}
+
+// ═══════════════════════════════════════════════
+// PIPELINE
+// ═══════════════════════════════════════════════
+const STAGES=[{k:'new',l:'🆕 Yeni',c:'#6a85aa'},{k:'contacted',l:'📞 Əlaqə',c:'#00c2ff'},{k:'meeting',l:'🤝 Görüş',c:'#9d7fff'},{k:'presented',l:'💊 Təqdim',c:'#ffb800'},{k:'positive',l:'✅ Müsbət',c:'#00dfa2'},{k:'contract',l:'🏆 Müqavilə',c:'#00dfa2'}];
+
+async function renderPipeline(){
+  const docs=await dbGet('dnk_doctors',{owner_id:VU().id});
+  document.getElementById('content').innerHTML=`
+  <div class="page-header"><div><div class="page-title">🔄 Pipeline</div><div class="page-sub">${docs.length} həkim</div></div></div>
+  <div class="kanban">
+    ${STAGES.map(st=>{
+      const sds=docs.filter(d=>(d.stage||'new')===st.k);
+      return`<div class="kol">
+        <div class="kol-header" style="background:${st.c}18;border:1px solid ${st.c}30;">
+          <span style="font-size:12px;font-weight:700;color:${st.c};">${st.l}</span>
+          <span style="font-size:11px;padding:2px 7px;border-radius:10px;background:rgba(255,255,255,0.08);color:${st.c};">${sds.length}</span>
+        </div>
+        <div class="kdrop-zone" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="dropCard(event,'${st.k}')">${sds.length?'':'↓'}</div>
+        ${sds.map(d=>`<div class="kcard" draggable="${!VA}" ondragstart="dragId='${d.id}'" ondragend="document.querySelectorAll('.kdrop-zone').forEach(z=>z.classList.remove('drag-over'))">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <div class="avatar" style="width:28px;height:28px;font-size:12px;">${d.name.charAt(0)}</div>
+            <div style="min-width:0;"><div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${d.name}</div><div style="font-size:10px;color:var(--text2);">${d.specialty||''}</div></div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <span class="badge ${potCls[d.potential]||'badge-gray'}" style="font-size:10px;">${potL[d.potential]||''}</span>
+            ${d.phone?`<a href="https://wa.me/${d.phone.replace(/\D/g,'')}" target="_blank" class="btn btn-wa btn-xs">💬</a>`:''}
+          </div>
+        </div>`).join('')}
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+async function dropCard(e,stage){
+  e.preventDefault();
+  document.querySelectorAll('.kdrop-zone').forEach(z=>z.classList.remove('drag-over'));
+  if(!dragId||VA)return;
+  await dbUpdate('dnk_doctors',dragId,{stage});
+  dragId=null;
+  toast('✅ Mərhələ yeniləndi');
+  await renderPipeline();
+}
+
+// ═══════════════════════════════════════════════
+// TASKS
+// ═══════════════════════════════════════════════
+const prioC={high:'var(--red)',medium:'var(--yellow)',low:'var(--green)'};
+const prioL={high:'🔴 Yüksək',medium:'🟡 Orta',low:'🟢 Aşağı'};
+
+async function renderTasks(){
+  const tasks=await dbGet('dnk_tasks',{owner_id:CU.id});
+  document.getElementById('content').innerHTML=`
+  <div class="page-header">
+    <div><div class="page-title">✅ Tapşırıqlar</div><div class="page-sub">${tasks.filter(t=>t.status==='pending').length} gözləyən</div></div>
+    <button class="btn btn-primary" onclick="openTaskModal()">＋ Tapşırıq</button>
+  </div>
+  <div class="task-tabs">
+    ${[['pending','⏳ Gözləyir'],['in_progress','🔄 Davam edir'],['done','✅ Tamamlandı'],['cancelled','❌ Ləğv edildi']].map(([k,l])=>`<div class="task-tab ${taskTab===k?'active':''}" onclick="taskTab='${k}';renderTasks();">${l} <span style="opacity:0.6;font-size:11px;margin-left:4px;">${tasks.filter(t=>t.status===k).length}</span></div>`).join('')}
+  </div>
+  <div id="task-list"></div>`;
+  const docs=await dbGet('dnk_doctors',{owner_id:CU.id});
+  const filtered=tasks.filter(t=>t.status===taskTab);
+  const el=document.getElementById('task-list');
+  if(!filtered.length){el.innerHTML=`<div class="empty"><div class="empty-icon">✅</div><div class="empty-text">Bu kateqoriyada tapşırıq yoxdur</div></div>`;return;}
+  el.innerHTML=filtered.map(t=>{
+    const doc=docs.find(d=>d.id===t.doctor_id);
+    const assignee=t.assigned_to&&t.assigned_to!==CU.id?allUsers.find(u=>u.id===t.assigned_to):null;
+    const overdue=t.due_date&&t.due_date<today()&&t.status==='pending';
+    return`<div class="card-sm" style="margin-bottom:8px;border-left:3px solid ${prioC[t.priority]};">
+      <div style="display:flex;align-items:start;gap:12px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:14px;font-weight:600;margin-bottom:4px;${t.status==='done'?'text-decoration:line-through;opacity:0.5':''}">${t.title}</div>
+          ${t.description?`<div style="font-size:12px;color:var(--text2);margin-bottom:4px;">${t.description}</div>`:''}
+          <div style="display:flex;flex-wrap:wrap;gap:10px;font-size:11px;color:var(--text2);">
+            <span>${prioL[t.priority]}</span>
+            ${doc?`<span>🏥 ${doc.name}</span>`:''}
+            ${t.due_date?`<span style="color:${overdue?'var(--red)':'var(--text2)'};">📅 ${fmtD(t.due_date)}${overdue?' ⚠️':''}</span>`:''}
+            ${assignee?`<span>→ ${assignee.name}</span>`:''}
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;">
+          ${t.status==='pending'?`<button class="btn btn-success btn-xs" onclick="updateTask('${t.id}','in_progress')">Başla</button>`:''}
+          ${t.status==='in_progress'?`<button class="btn btn-success btn-xs" onclick="updateTask('${t.id}','done')">✅ Tamamla</button>`:''}
+          ${['pending','in_progress'].includes(t.status)?`<button class="btn btn-danger btn-xs" onclick="updateTask('${t.id}','cancelled')">Ləğv</button>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function openTaskModal(){
+  const docs=await dbGet('dnk_doctors',{owner_id:CU.id});
+  document.getElementById('tm-doctor').innerHTML='<option value="">—</option>'+docs.map(d=>`<option value="${d.id}">${d.name}</option>`).join('');
+  if(isManager()){
+    document.querySelector('#task-modal .nav-manager-field').style.display='block';
+    document.getElementById('tm-assign').innerHTML='<option value="">Özüm</option>'+allUsers.filter(u=>u.active).map(u=>`<option value="${u.id}">${u.name}</option>`).join('');
+  }
+  document.getElementById('tm-id').value='';
+  openModal('task-modal');
+}
+
+async function saveTask(){
+  const title=document.getElementById('tm-title').value.trim();
+  if(!title){toast('Başlıq mütləqdir!','error');return;}
+  const assignedTo=isManager()&&document.getElementById('tm-assign').value?document.getElementById('tm-assign').value:CU.id;
+  const obj={title,priority:document.getElementById('tm-priority').value,due_date:document.getElementById('tm-due').value||null,doctor_id:document.getElementById('tm-doctor').value||null,description:document.getElementById('tm-desc').value.trim(),status:'pending',owner_id:assignedTo,assigned_to:assignedTo};
+  await dbInsert('dnk_tasks',obj);
+  closeModal('task-modal');
+  toast('✅ Tapşırıq saxlandı');
+  await renderTasks(); updateBadges();
+}
+
+async function updateTask(id,status){
+  await dbUpdate('dnk_tasks',id,{status});
+  toast(status==='done'?'✅ Tamamlandı!':'Yeniləndi');
+  await renderTasks(); updateBadges();
+}
+
+async function completeTask(id){ await updateTask(id,'done'); }
+
+// ═══════════════════════════════════════════════
+// REMINDERS
+// ═══════════════════════════════════════════════
+async function renderReminders(){
+  const [rems,docs,vis]=await Promise.all([dbGet('dnk_reminders',{owner_id:CU.id}),dbGet('dnk_doctors',{owner_id:CU.id}),dbGet('dnk_visits',{owner_id:CU.id})]);
+  const t=today();
+  const ov=rems.filter(r=>!r.done&&r.reminder_date<t);
+  const td=rems.filter(r=>!r.done&&r.reminder_date===t);
+  const up=rems.filter(r=>!r.done&&r.reminder_date>t).sort((a,b)=>a.reminder_date.localeCompare(b.reminder_date));
+  const vov=vis.filter(v=>v.next_date&&v.next_date<t);
+  const vup=vis.filter(v=>v.next_date&&v.next_date>=t).sort((a,b)=>a.next_date.localeCompare(b.next_date)).slice(0,8);
+
+  function remItem(r,over,isVis){
+    const doc=docs.find(d=>d.id===(isVis?r.doctor_id:r.doctor_id))||{};
+    if(isVis)return`<div class="list-item"><span style="font-size:20px;">📋</span><div class="list-info"><div class="list-name">${doc.name||'?'} — Növbəti Ziyarət</div><div class="list-sub" style="color:${over?'var(--red)':'var(--yellow)'};">${over?'⚠️ Gecikmiş: ':'📅 '}${fmtD(r.next_date)}</div></div>${doc.phone?`<a href="https://wa.me/${doc.phone.replace(/\D/g,'')}" target="_blank" class="btn btn-wa btn-sm">💬</a>`:''}</div>`;
+    return`<div class="list-item"><span style="font-size:20px;">${r.done?'✅':'🔔'}</span><div class="list-info"><div class="list-name" style="${r.done?'text-decoration:line-through;opacity:0.5':''}">${r.title}</div>${doc.name?`<div class="list-sub">👨‍⚕️ ${doc.name}</div>`:''}<div class="list-sub" style="color:${over?'var(--red)':'var(--yellow)'};">${over?'⚠️ ':''} ${fmtD(r.reminder_date)}${r.reminder_time?' · '+r.reminder_time:''}</div></div><div class="list-actions">${doc.phone?`<a href="https://wa.me/${doc.phone.replace(/\D/g,'')}" target="_blank" class="btn btn-wa btn-sm">💬</a>`:''}<button class="btn btn-success btn-sm" onclick="toggleReminder('${r.id}',${r.done})">${r.done?'↩️':'✅'}</button><button class="btn btn-danger btn-sm" onclick="deleteReminder('${r.id}')">🗑️</button></div></div>`;
+  }
+
+  function section(title,items,bc,brd){
+    if(!items.length)return'';
+    return`<div style="background:var(--s1);border:1px solid ${brd||'var(--border)'};border-radius:var(--r);margin-bottom:14px;overflow:hidden;"><div style="padding:11px 16px;border-bottom:1px solid var(--border);background:${bc};"><span style="font-size:13px;font-weight:700;color:${brd||'var(--yellow)'};">${title} (${items.length})</span></div>${items.join('')}</div>`;
+  }
+
+  const allOv=[...ov.map(r=>remItem(r,true,false)),...vov.map(r=>remItem(r,true,true))];
+  const allUp=[...up.map(r=>remItem(r,false,false)),...vup.map(r=>remItem(r,false,true))];
+
+  document.getElementById('content').innerHTML=`
+  <div class="page-header"><div><div class="page-title">🔔 Xatırlatmalar</div></div><button class="btn btn-primary" onclick="openReminderModal()">＋ Xatırlatma</button></div>
+  ${section('⚠️ Gecikmiş',allOv,'rgba(255,61,110,0.06)','var(--red)')}
+  ${section('📅 Bu gün',td.map(r=>remItem(r,false,false)),'rgba(255,184,0,0.06)','var(--yellow)')}
+  ${section('🔮 Gələcək',allUp,'','var(--border)')}
+  ${!allOv.length&&!td.length&&!allUp.length?`<div class="empty"><div class="empty-icon">🔔</div><div class="empty-text">Xatırlatma yoxdur</div></div>`:''}`;
+}
+
+async function openReminderModal(){
+  const docs=await dbGet('dnk_doctors',{owner_id:CU.id});
+  document.getElementById('rem-doctor').innerHTML='<option value="">—</option>'+docs.map(d=>`<option value="${d.id}">${d.name}</option>`).join('');
+  document.getElementById('rem-date').value=today();
+  document.getElementById('rem-id').value='';
+  openModal('reminder-modal');
+}
+
+async function saveReminder(){
+  const title=document.getElementById('rem-title').value.trim();
+  const date=document.getElementById('rem-date').value;
+  if(!title||!date){toast('Başlıq və tarix mütləqdir!','error');return;}
+  const obj={title,reminder_date:date,reminder_time:document.getElementById('rem-time').value||null,note:document.getElementById('rem-note').value.trim(),doctor_id:document.getElementById('rem-doctor').value||null,done:false,owner_id:CU.id};
+  await dbInsert('dnk_reminders',obj);
+  closeModal('reminder-modal');
+  toast('🔔 Xatırlatma əlavə edildi');
+  await renderReminders(); updateBadges();
+}
+
+async function toggleReminder(id,done){
+  await dbUpdate('dnk_reminders',id,{done:!done});
+  toast(!done?'✅ Tamamlandı':'🔄 Aktiv edildi');
+  await renderReminders(); updateBadges();
+}
+
+async function deleteReminder(id){
+  if(!confirm('Silinsin?'))return;
+  await dbDelete('dnk_reminders',id);
+  toast('🗑️ Silindi','warn');
+  await renderReminders(); updateBadges();
+}
+
+// ═══════════════════════════════════════════════
+// PRODUCTS
+// ═══════════════════════════════════════════════
+const catIcon={'Cərrahi Xidmət':'🔬','Diaqnostika':'🩺','Estetik Tibb':'✨','Stomatoloji':'🦷','Ortopediya':'🦴','Kardiologiya':'❤️','Digər':'💊'};
+
+async function renderProducts(){
+  allProducts = await dbGet('dnk_products');
+  document.getElementById('content').innerHTML=`
+  <div class="page-header">
+    <div><div class="page-title">💊 Məhsul Kataloqu</div><div class="page-sub">${allProducts.length} məhsul</div></div>
+    ${isManager()?`<button class="btn btn-primary" onclick="openProductModal()">＋ Məhsul Əlavə Et</button>`:''}
+  </div>
+  <input class="input" placeholder="🔍 Axtarın..." id="prod-search" oninput="filterProducts()" style="margin-bottom:16px;">
+  <div id="prod-grid" class="grid-4">${renderProductGrid(allProducts)}</div>`;
+}
+
+function renderProductGrid(prods){
+  if(!prods.length) return `<div class="empty" style="grid-column:1/-1;"><div class="empty-icon">💊</div><div>Məhsul tapılmadı</div></div>`;
+  return prods.map(p=>`
+    <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:16px;transition:transform 0.2s;" onmouseenter="this.style.transform='translateY(-3px)'" onmouseleave="this.style.transform='none'">
+      <div style="width:40px;height:40px;border-radius:11px;background:var(--ag);display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:10px;">${catIcon[p.category]||'💊'}</div>
+      <div style="display:flex;align-items:start;justify-content:space-between;gap:4px;margin-bottom:3px;">
+        <div style="font-size:13px;font-weight:700;">${p.name}</div>
+        <span class="badge ${p.active?'badge-green':'badge-red'}" style="font-size:10px;flex-shrink:0;">${p.active?'Aktiv':'Deaktiv'}</span>
+      </div>
+      <div style="font-size:11px;color:var(--a);font-weight:600;margin-bottom:6px;">${p.category||''}</div>
+      ${p.description?`<div style="font-size:11px;color:var(--text2);margin-bottom:8px;line-height:1.5;">${p.description.substring(0,60)}</div>`:''}
+      ${p.price?`<div style="font-size:15px;font-weight:800;color:var(--green);margin-bottom:10px;">${Number(p.price).toLocaleString()} AZN</div>`:''}
+      ${isManager()?`<div style="display:flex;gap:6px;"><button class="btn btn-ghost btn-xs" style="flex:1;justify-content:center;" onclick="openProductModal('${p.id}')">✏️</button><button class="btn btn-danger btn-xs" onclick="deleteProduct('${p.id}')">🗑️</button></div>`:''}
+    </div>`).join('');
+}
+
+function filterProducts(){
+  const q=(document.getElementById('prod-search')?.value||'').toLowerCase();
+  const f=allProducts.filter(p=>p.name.toLowerCase().includes(q)||(p.category||'').toLowerCase().includes(q));
+  document.getElementById('prod-grid').innerHTML=renderProductGrid(f);
+}
+
+async function openProductModal(id){
+  document.getElementById('pm-id').value=id||'';
+  if(id){
+    const p=allProducts.find(x=>x.id===id);if(!p)return;
+    document.getElementById('pm-title').textContent='✏️ Məhsulu Düzəlt';
+    document.getElementById('pm-name').value=p.name||'';
+    document.getElementById('pm-cat').value=p.category||'';
+    document.getElementById('pm-price').value=p.price||'';
+    document.getElementById('pm-active').value=String(p.active);
+    document.getElementById('pm-desc').value=p.description||'';
+  } else document.getElementById('pm-title').textContent='💊 Məhsul Əlavə Et';
+  openModal('product-modal');
+}
+
+async function saveProduct(){
+  const name=document.getElementById('pm-name').value.trim();
+  if(!name){toast('Ad mütləqdir!','error');return;}
+  const id=document.getElementById('pm-id').value;
+  const obj={name,category:document.getElementById('pm-cat').value,price:parseFloat(document.getElementById('pm-price').value)||0,active:document.getElementById('pm-active').value==='true',description:document.getElementById('pm-desc').value.trim()};
+  if(id) await dbUpdate('dnk_products',id,obj);
+  else await dbInsert('dnk_products',obj);
+  closeModal('product-modal');
+  toast('✅ Yadda saxlandı');
+  await renderProducts();
+}
+
+async function deleteProduct(id){
+  if(!confirm('Silinsin?'))return;
+  await dbDelete('dnk_products',id);
+  toast('🗑️ Silindi','warn');
+  await renderProducts();
+}
+
+// ═══════════════════════════════════════════════
+// REPORTS
+// ═══════════════════════════════════════════════
+async function renderReports(){
+  const uid=VU().id;
+  const m=today().slice(0,7);
+  let docs,vis;
+  if(isManager()&&!VA){
+    [docs,vis]=await Promise.all([
+      sb.from('dnk_doctors').select('*,owner:dnk_users(name)').then(r=>r.data||[]),
+      sb.from('dnk_visits').select('*,owner:dnk_users(name)').then(r=>r.data||[])
+    ]);
+  } else {
+    [docs,vis]=await Promise.all([dbGet('dnk_doctors',{owner_id:uid}),dbGet('dnk_visits',{owner_id:uid})]);
+  }
+  const mv=vis.filter(v=>v.visit_date?.startsWith(m));
+  const statusData=[{l:'Müsbət',c:'var(--green)',cnt:vis.filter(v=>v.status==='positive').length},{l:'Neytral',c:'var(--yellow)',cnt:vis.filter(v=>v.status==='neutral').length},{l:'Mənfi',c:'var(--red)',cnt:vis.filter(v=>v.status==='negative').length},{l:'Plan',c:'var(--a)',cnt:vis.filter(v=>v.status==='planned').length}];
+  const maxS=Math.max(...statusData.map(s=>s.cnt),1);
+  const docMap={};vis.forEach(v=>{const d=docs.find(x=>x.id===v.doctor_id)||{};const n=d.name||'?';docMap[n]=(docMap[n]||0)+1;});
+  const topDocs=Object.entries(docMap).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const maxD=topDocs[0]?.[1]||1;
+  const monthly=[];
+  for(let i=5;i>=0;i--){const d=new Date();d.setMonth(d.getMonth()-i);const mk=d.toISOString().slice(0,7);const lbl=['Yan','Fev','Mar','Apr','May','İyn','İyl','Avq','Sen','Okt','Noy','Dek'][d.getMonth()];monthly.push({lbl,cnt:vis.filter(v=>v.visit_date?.startsWith(mk)).length});}
+  const maxM=Math.max(...monthly.map(m=>m.cnt),1);
+
+  let repSection='';
+  if(isManager()&&!VA){
+    const reps=allUsers.filter(u=>u.active&&u.role==='rep');
+    const repVis=await Promise.all(reps.map(u=>dbGet('dnk_visits',{owner_id:u.id})));
+    const repData=reps.map((u,i)=>({...u,cnt:repVis[i].filter(v=>v.visit_date?.startsWith(m)).length,pos:repVis[i].filter(v=>v.status==='positive').length})).sort((a,b)=>b.cnt-a.cnt);
+    const maxR=Math.max(...repData.map(r=>r.cnt),1);
+    repSection=`<div class="card" style="grid-column:1/-1;"><div class="card-title">👥 Komanda — ${m}</div><div style="display:grid;gap:10px;">${repData.map((r,i)=>`<div style="display:flex;align-items:center;gap:12px;cursor:pointer;" onclick="viewAs('${r.id}')"><div style="width:22px;text-align:center;font-size:13px;">${i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`}</div><div class="avatar" style="width:30px;height:30px;font-size:12px;">${r.name.charAt(0)}</div><div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;">${r.name}</div><div style="font-size:11px;color:var(--text2);">${r.pos} müsbət / ${r.cnt} ziyarət</div></div><div style="width:120px;"><div class="prog-track"><div class="prog-fill" style="width:${Math.round(r.cnt/maxR*100)}%;"></div></div></div><div style="font-size:13px;font-weight:700;color:var(--a);min-width:30px;text-align:right;">${r.cnt}</div></div>`).join('')}</div></div>`;
+  }
+
+  document.getElementById('content').innerHTML=`
+  <div class="page-header"><div><div class="page-title">📈 Hesabatlar</div></div><button class="btn btn-success" onclick="exportFull()">📥 Tam Excel</button></div>
+  <div class="grid-2">
+    <div class="card"><div class="card-title">📊 Aylıq Trend</div><div class="chart-wrap">${monthly.map(m=>`<div class="chart-item"><div class="chart-label">${m.lbl}</div><div class="chart-track"><div class="chart-fill" style="width:${Math.round(m.cnt/maxM*100)}%;background:var(--ag);"></div></div><div class="chart-val">${m.cnt}</div></div>`).join('')}</div></div>
+    <div class="card"><div class="card-title">🥧 Status Bölgüsü</div><div class="chart-wrap" style="gap:12px;">${statusData.map(s=>`<div class="chart-item"><div class="chart-label">${s.l}</div><div class="chart-track"><div class="chart-fill" style="width:${Math.round(s.cnt/maxS*100)}%;background:${s.c};"></div></div><div class="chart-val">${s.cnt}</div></div>`).join('')}${vis.length?`<div style="text-align:center;margin-top:10px;"><span style="font-size:28px;font-weight:900;color:var(--green);">${Math.round(vis.filter(v=>v.status==='positive').length/vis.length*100)}%</span><span style="margin-left:6px;font-size:12px;color:var(--text2);">müsbət nisbət</span></div>`:''}</div></div>
+    <div class="card"><div class="card-title">👨‍⚕️ Ən Çox Ziyarət Edilən</div><div class="chart-wrap">${topDocs.length?topDocs.map(([n,c],i)=>`<div class="chart-item"><div class="chart-label" style="font-size:11px;">${i===0?'🥇':i===1?'🥈':i===2?'🥉':''}${n.split(' ').slice(0,2).join(' ')}</div><div class="chart-track"><div class="chart-fill" style="width:${Math.round(c/maxD*100)}%;background:var(--ag);"></div></div><div class="chart-val">${c}</div></div>`).join(''):'<div style="color:var(--text2);font-size:13px;">Məlumat yoxdur</div>'}</div></div>
+    <div class="card"><div class="card-title">🔄 Pipeline</div><div class="chart-wrap">${STAGES.map(st=>{const cnt=docs.filter(d=>(d.stage||'new')===st.k).length;return`<div class="chart-item"><div class="chart-label" style="font-size:11px;">${st.l}</div><div class="chart-track"><div class="chart-fill" style="width:${docs.length?Math.round(cnt/docs.length*100):0}%;background:${st.c};"></div></div><div class="chart-val">${cnt}</div></div>`;}).join('')}</div></div>
+    ${repSection}
+  </div>`;
+}
+
+async function exportFull(){
+  const uid=VU().id;
+  let docs,vis;
+  if(isManager()&&!VA){
+    [docs,vis]=await Promise.all([sb.from('dnk_doctors').select('*,owner:dnk_users(name)').then(r=>r.data||[]),sb.from('dnk_visits').select('*,owner:dnk_users(name),doc:dnk_doctors(name,specialty)').then(r=>r.data||[])]);
+  } else {
+    [docs,vis]=await Promise.all([dbGet('dnk_doctors',{owner_id:uid}),dbGet('dnk_visits',{owner_id:uid})]);
+  }
+  const wb=XLSX.utils.book_new();
+  if(docs.length){XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(docs.map(d=>({'Ad':d.name,'İxtisas':d.specialty||'','Klinika':d.clinic||'','Potensial':potL[d.potential]||'','Mərhələ':stageL[d.stage]||'','Nümayəndə':d.owner?.name||''}))),'Həkimlər');}
+  if(vis.length){XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(vis.map(v=>({'Tarix':fmtD(v.visit_date),'Həkim':v.doc?.name||docs.find(d=>d.id===v.doctor_id)?.name||'','Status':smap[v.status]?.l||v.status,'Məhsullar':(v.products||[]).join(', '),'Qeydlər':v.notes||'','Nümayəndə':v.owner?.name||''}))),'Ziyarətlər');}
+  XLSX.writeFile(wb,`DNK_CRM_${today()}.xlsx`);toast('📥 Tam hesabat yükləndi');
+}
+
+// ═══════════════════════════════════════════════
+// EXPORT PAGE
+// ═══════════════════════════════════════════════
+function renderExport(){
+  document.getElementById('content').innerHTML=`
+  <div class="page-header"><div><div class="page-title">📥 Export</div></div></div>
+  <div class="grid-4">
+    ${[{icon:'👨‍⚕️',title:'Həkimlər',fn:'exportDoctorsList',cls:'btn-success'},{icon:'📋',title:'Ziyarətlər',fn:'exportVisitsList',cls:'btn-success'},{icon:'💊',title:'Məhsullar',fn:'exportProductsList',cls:'btn-success'},{icon:'📊',title:'Tam Hesabat',fn:'exportFull',cls:'btn-primary'}].map(c=>`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:20px;text-align:center;"><div style="font-size:36px;margin-bottom:10px;">${c.icon}</div><div style="font-size:14px;font-weight:700;margin-bottom:16px;">${c.title}</div><button class="btn ${c.cls}" style="width:100%;justify-content:center;" onclick="${c.fn}()">📥 Yüklə</button></div>`).join('')}
+  </div>`;
+}
+
+async function exportProductsList(){
+  if(!allProducts.length){toast('Məlumat yoxdur!','warn');return;}
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(allProducts.map(p=>({'Ad':p.name,'Kateqoriya':p.category||'','Açıqlama':p.description||'','Qiymət':p.price||0,'Status':p.active?'Aktiv':'Deaktiv'}))),'Məhsullar');
+  XLSX.writeFile(wb,`DNK_Mehsullar_${today()}.xlsx`);toast('📥 Excel yükləndi');
+}
+
+// ═══════════════════════════════════════════════
+// TEAM
+// ═══════════════════════════════════════════════
+async function renderTeam(){
+  if(!isManager()){document.getElementById('content').innerHTML=`<div class="empty"><div class="empty-icon">🔒</div><div class="empty-text">Yalnız admin/menecer üçündür</div></div>`;return;}
+  const m=today().slice(0,7);
+  const visAll=await Promise.all(allUsers.map(u=>dbGet('dnk_visits',{owner_id:u.id})));
+  const docAll=await Promise.all(allUsers.map(u=>dbGet('dnk_doctors',{owner_id:u.id})));
+  const tgtAll=await Promise.all(allUsers.map(u=>sb.from('dnk_targets').select('*').eq('owner_id',u.id).eq('month',m).single().then(r=>r.data)));
+
+  const members=allUsers.map((u,i)=>({...u,monthV:visAll[i].filter(v=>v.visit_date?.startsWith(m)).length,totalV:visAll[i].length,docs:docAll[i].length,target:tgtAll[i]}));
+
+  document.getElementById('content').innerHTML=`
+  <div class="page-header">
+    <div><div class="page-title">👥 Komanda</div><div class="page-sub">${allUsers.filter(u=>u.active).length} aktiv üzv</div></div>
+    <button class="btn btn-primary" onclick="openUserModal()">＋ Üzv Əlavə Et</button>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;">
+    ${members.map(u=>{
+      const tv=u.target?.visit_target||0;
+      const prog=tv?Math.min(Math.round(u.monthV/tv*100),100):null;
+      const rBadge={admin:'badge-red',manager:'badge-yellow',rep:'badge-green'}[u.role]||'badge-gray';
+      return`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:20px;opacity:${u.active?1:0.5};">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+          <div class="avatar" style="width:48px;height:48px;font-size:18px;">${u.name.charAt(0)}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:15px;font-weight:700;">${u.name}</div>
+            <div style="display:flex;gap:6px;margin-top:3px;flex-wrap:wrap;">
+              <span class="badge ${rBadge}">${roleLabel(u.role)}</span>
+              ${!u.active?'<span class="badge badge-gray">Deaktiv</span>':''}
+              ${u.region?`<span style="font-size:11px;color:var(--text2);">📍${u.region}</span>`:''}
+            </div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
+          ${[['Bu Ay',u.monthV,'var(--a)'],['Cəmi',u.totalV,'var(--text2)'],['Həkim',u.docs,'var(--green)']].map(([l,v,c])=>`<div style="text-align:center;padding:10px 6px;background:var(--s2);border-radius:var(--r3);border:1px solid var(--border);"><div style="font-size:20px;font-weight:800;color:${c};">${v}</div><div style="font-size:10px;color:var(--text2);">${l}</div></div>`).join('')}
+        </div>
+        ${prog!==null?`<div style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2);margin-bottom:4px;"><span>Hədəf: ${u.monthV}/${tv}</span><span>${prog}%</span></div><div class="prog-track"><div class="prog-fill" style="width:${prog}%;background:${prog>=100?'linear-gradient(90deg,var(--green),#00b37a)':prog>=60?'linear-gradient(90deg,var(--yellow),#e69600)':'linear-gradient(90deg,var(--red),#cc1a4a)'};"></div></div></div>`:''}
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-ghost btn-sm" style="flex:1;justify-content:center;" onclick="viewAs('${u.id}')">👁️ Görüntülə</button>
+          <button class="btn btn-yellow btn-sm" onclick="openTargetModal('${u.id}','${u.name}')">🎯</button>
+          <button class="btn btn-ghost btn-sm" onclick="openUserModal('${u.id}')">✏️</button>
+          ${u.id!==CU.id?`<button class="btn btn-sm ${u.active?'btn-danger':'btn-success'}" onclick="toggleUser('${u.id}',${u.active})">${u.active?'🔒':'🔓'}</button>`:''}
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+async function openUserModal(id){
+  document.getElementById('um-status-row').style.display=id?'block':'none';
+  document.getElementById('um-id').value=id||'';
+  if(id){
+    const u=allUsers.find(x=>x.id===id);if(!u)return;
+    document.getElementById('um-title').textContent='✏️ İstifadəçini Düzəlt';
+    document.getElementById('um-name').value=u.name||'';
+    document.getElementById('um-role').value=u.role||'rep';
+    document.getElementById('um-pass').value=u.password||'';
+    document.getElementById('um-region').value=u.region||'';
+    document.getElementById('um-phone').value=u.phone||'';
+    document.getElementById('um-active').value=String(u.active);
+  } else document.getElementById('um-title').textContent='👤 Üzv Əlavə Et';
+  openModal('user-modal');
+}
+
+async function saveUser(){
+  const name=document.getElementById('um-name').value.trim();
+  const pass=document.getElementById('um-pass').value.trim();
+  if(!name||!pass){toast('Ad və şifrə mütləqdir!','error');return;}
+  if(pass.length<4){toast('Şifrə ən azı 4 simvol!','error');return;}
+  const id=document.getElementById('um-id').value;
+  const obj={name,role:document.getElementById('um-role').value,password:pass,region:document.getElementById('um-region').value.trim(),phone:document.getElementById('um-phone').value.trim(),active:id?document.getElementById('um-active').value==='true':true};
+  if(id) await dbUpdate('dnk_users',id,obj);
+  else await dbInsert('dnk_users',obj);
+  closeModal('user-modal');
+  allUsers=await dbGet('dnk_users');
+  populateLoginUsers();
+  toast(id?'✅ İstifadəçi yeniləndi':'✅ Üzv əlavə edildi');
+  await renderTeam();
+}
+
+async function toggleUser(id,active){
+  await dbUpdate('dnk_users',id,{active:!active});
+  allUsers=await dbGet('dnk_users');
+  toast(!active?'✅ Aktiv edildi':'🔒 Deaktiv edildi');
+  await renderTeam();
+}
+
+async function openTargetModal(userId,userName){
+  const m=today().slice(0,7);
+  const t=await sb.from('dnk_targets').select('*').eq('owner_id',userId).eq('month',m).single().then(r=>r.data);
+  document.getElementById('tgt-uid').value=userId;
+  document.getElementById('tgt-title').textContent=`🎯 ${userName} — ${m}`;
+  document.getElementById('tgt-visits').value=t?.visit_target||'';
+  document.getElementById('tgt-positive').value=t?.positive_target||'';
+  document.getElementById('tgt-doctors').value=t?.doctor_target||'';
+  openModal('target-modal');
+}
+
+async function saveTarget(){
+  const uid=document.getElementById('tgt-uid').value;
+  const m=today().slice(0,7);
+  const obj={owner_id:uid,month:m,visit_target:parseInt(document.getElementById('tgt-visits').value)||0,positive_target:parseInt(document.getElementById('tgt-positive').value)||0,doctor_target:parseInt(document.getElementById('tgt-doctors').value)||0};
+  await sb.from('dnk_targets').upsert(obj,{onConflict:'owner_id,month'});
+  closeModal('target-modal');
+  toast('🎯 Hədəf saxlandı');
+  await renderTeam();
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+document.getElementById('top-date').textContent=fmtDate();
+setInterval(()=>document.getElementById('top-date').textContent=fmtDate(),60000);
+initApp();
+</script>
+</body>
+</html>
